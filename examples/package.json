@@ -1,0 +1,28 @@
+{
+  "name": "obsy-examples",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "setup": "cd ../ && npm run build && npm pack && cd examples && npm install ../obsy-sdk-*.tgz",
+    "eg-openai": "tsx watch src/openai.ts",
+    "eg-openai-responses": "tsx watch src/openai-responses.ts",
+    "eg-rag": "tsx watch src/rag.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "@obsy-ai/sdk": "file:../obsy-sdk-0.0.1.tgz",
+    "express": "^4.21.2",
+    "openai": "^4.89.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.1",
+    "@types/node": "^22.13.11",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2"
+  }
+}
