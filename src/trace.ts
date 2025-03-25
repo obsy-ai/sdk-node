@@ -8,6 +8,7 @@ import type { ObsyClient } from "./client.js";
 import type { AnyFunction, Op, OpTracerFn, OperationType, OperationVendor } from "./types/index.js";
 import type { OaiCompletionCreateReturnType, OaiCompletionCreateType, OaiResponsesCreateType } from "./types/openai.js";
 import type { PineconeIndexQueryType } from "./types/pinecone.js";
+import type { VercelAIEmbedManyType, VercelAIGenerateTextType, VercelAIStreamTextType } from "./types/vercel-ai.js";
 import { redactSensitiveKeys } from "./utils.js";
 
 interface TraceHttpRequest {
@@ -67,6 +68,9 @@ export class ObsyTrace {
       "openai.chat.completions.create": this.recordOpenAi.bind(this),
       "pinecone.index.query": this.recordPineconeQuery.bind(this),
       "pinecone.index.namespace.query": this.recordPineconeQuery.bind(this),
+      "ai.embedMany": this.recordVercelAIEmbedMany.bind(this),
+      "ai.generateText": this.recordVercelAIGenerateText.bind(this),
+      "ai.streamText": this.recordVercelAIStreamText.bind(this),
     };
   }
 
@@ -198,6 +202,79 @@ export class ObsyTrace {
     }
   }
 
+  async recordVercelAIEmbedMany(op: Op<VercelAIEmbedManyType>) {}
+
+  async recordVercelAIGenerateText(op: Op<VercelAIGenerateTextType>) {
+    const operation = this.createOperation(op.label, "vercel", op.type, op.args);
+    operation.result = {
+      value: undefined,
+      model: op.args[0].model.modelId,
+      usage: undefined,
+    };
+
+    try {
+      const result = await op.fn.apply(op.thisArg, op.args);
+      operation.result.value = result;
+      operation.result.usage = result.usage;
+      return result;
+    } catch (err) {
+      operation.error = err;
+    } finally {
+      operation.endedAt = Date.now();
+      operation.duration = operation.endedAt - operation.startedAt;
+      if (operation.error) {
+        throw operation.error;
+      }
+    }
+  }
+
+  recordVercelAIStreamText(op: Op<VercelAIStreamTextType>) {
+    const operation = this.createOperation(op.label, "vercel", op.type, op.args);
+    operation.result = {
+      value: undefined,
+      model: op.args[0].model.modelId,
+      usage: undefined,
+    };
+
+    const chunks: Array<string> = [];
+    operation.result.value = chunks;
+
+    try {
+      const result = op.fn.apply(op.thisArg, op.args);
+
+      const [processingStream, userStream] = result.textStream.tee();
+
+      (async () => {
+        try {
+          for await (const chunk of processingStream) {
+            chunks.push(chunk);
+          }
+
+          operation.result!.usage = await result.usage;
+        } catch (err) {
+          operation.error = err;
+          throw err;
+        } finally {
+          operation.endedAt = Date.now();
+          operation.duration = operation.endedAt - operation.startedAt;
+          if (operation.error) {
+            throw operation.error;
+          }
+        }
+      })();
+
+      return {
+        ...result,
+        textStream: userStream,
+      };
+    } catch (err) {
+      operation.error = err;
+      operation.endedAt = Date.now();
+      operation.duration = operation.endedAt - operation.startedAt;
+      throw err;
+    }
+  }
+
   addResponse(response: TraceHttpResponse) {
     this.#response = response;
   }
@@ -205,7 +282,9 @@ export class ObsyTrace {
   end() {
     this.#endedAt = Date.now();
     this.#duration = this.#endedAt - this.#startedAt;
-    this.#client.sendTrace(this);
+    this.#client.sendTrace(this).catch((err) => {
+      console.error("[obsy] failed to send trace:", err);
+    });
   }
 
   createOperation(label: string, vendor: OperationVendor, type: OperationType, args: unknown[]) {

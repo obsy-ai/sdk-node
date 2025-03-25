@@ -6,15 +6,15 @@
   "homepage": "https://obsy.dev/",
   "repository": {
     "type": "git",
-    "url": "https://github.com/obsy-dev/sdk-node.git"
+    "url": "https://github.com/obsy-ai/sdk-node.git"
   },
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "dist/index.js",
   "module": "dist/index.mjs",
   "types": "dist/index.d.js",
   "type": "module",
   "scripts": {
-    "build": "tsup",
+    "build": "rm -f obsy-ai-sdk-*.tgz && tsup",
     "publish": "npm run build && npm publish --access public",
     "check": "tsc --noEmit",
     "start": "npm run build && node dist/index.js"
@@ -49,6 +49,7 @@
     "@pinecone-database/pinecone": "^5.1.1",
     "@types/express": "^5.0.1",
     "@types/node": "^22.12.0",
+    "ai": "^4.2.2",
     "openai": "^4.89.0",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3"
