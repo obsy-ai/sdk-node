@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "setup": "cd ../ && npm run build && npm pack && cd examples && npm install ../obsy-sdk-*.tgz",
+    "setup": "cd ../ && npm run build && npm pack && cd examples && npm install ../obsy-ai-sdk-*.tgz",
     "eg-openai": "tsx watch src/openai.ts",
     "eg-openai-responses": "tsx watch src/openai-responses.ts",
     "eg-rag": "tsx watch src/rag.ts"
@@ -14,7 +14,7 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "@obsy-ai/sdk": "file:../obsy-sdk-0.0.1.tgz",
+    "@obsy-ai/sdk": "file:../obsy-ai-sdk-0.0.1.tgz",
     "express": "^4.21.2",
     "openai": "^4.89.0"
   },
