@@ -20,7 +20,8 @@
     "@obsy-ai/sdk": "file:../obsy-ai-sdk-0.0.2.tgz",
     "ai": "^4.2.2",
     "express": "^4.21.2",
-    "openai": "^4.89.0"
+    "openai": "^4.89.0",
+    "zod": "^3.24.2"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",

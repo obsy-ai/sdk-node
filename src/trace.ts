@@ -8,7 +8,14 @@ import type { ObsyClient } from "./client.js";
 import type { AnyFunction, Op, OpTracerFn, OperationType, OperationVendor } from "./types/index.js";
 import type { OaiCompletionCreateReturnType, OaiCompletionCreateType, OaiResponsesCreateType } from "./types/openai.js";
 import type { PineconeIndexQueryType } from "./types/pinecone.js";
-import type { VercelAIEmbedManyType, VercelAIGenerateTextType, VercelAIStreamTextType } from "./types/vercel-ai.js";
+import type {
+  VercelAIEmbedManyType,
+  VercelAIGenerateObjectReturnType,
+  VercelAIGenerateObjectType,
+  VercelAIGenerateTextReturnType,
+  VercelAIGenerateTextType,
+  VercelAIStreamTextType,
+} from "./types/vercel-ai.js";
 import { redactSensitiveKeys } from "./utils.js";
 
 interface TraceHttpRequest {
@@ -69,8 +76,9 @@ export class ObsyTrace {
       "pinecone.index.query": this.recordPineconeQuery.bind(this),
       "pinecone.index.namespace.query": this.recordPineconeQuery.bind(this),
       "ai.embedMany": this.recordVercelAIEmbedMany.bind(this),
-      "ai.generateText": this.recordVercelAIGenerateText.bind(this),
+      "ai.generateText": this.recordVercelAIGenerateTextOrObject.bind(this),
       "ai.streamText": this.recordVercelAIStreamText.bind(this),
+      "ai.generateObject": this.recordVercelAIGenerateTextOrObject.bind(this),
     };
   }
 
@@ -204,7 +212,7 @@ export class ObsyTrace {
 
   async recordVercelAIEmbedMany(op: Op<VercelAIEmbedManyType>) {}
 
-  async recordVercelAIGenerateText(op: Op<VercelAIGenerateTextType>) {
+  async recordVercelAIGenerateTextOrObject(op: Op<VercelAIGenerateTextType | VercelAIGenerateObjectType>) {
     const operation = this.createOperation(op.label, "vercel", op.type, op.args);
     operation.result = {
       value: undefined,
@@ -213,7 +221,9 @@ export class ObsyTrace {
     };
 
     try {
-      const result = await op.fn.apply(op.thisArg, op.args);
+      const result: Awaited<VercelAIGenerateTextReturnType | VercelAIGenerateObjectReturnType> = await (
+        op.fn as any
+      ).apply(op.thisArg as any, op.args as any);
       operation.result.value = result;
       operation.result.usage = result.usage;
       return result;

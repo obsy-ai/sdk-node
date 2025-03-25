@@ -1,8 +1,9 @@
 import { openai } from "@ai-sdk/openai";
 import { ObsyClient, obsyExpress } from "@obsy-ai/sdk";
-import { generateText as aiGenerateText, streamText as aiStreamText } from "ai";
+import { generateObject as aiGenerateObject, generateText as aiGenerateText, streamText as aiStreamText } from "ai";
 import "dotenv/config";
 import express from "express";
+import { z } from "zod";
 
 const app = express();
 
@@ -22,9 +23,10 @@ const obsy = new ObsyClient({
 });
 
 // 2. instrument functions from Vercel AI SDK
-const { generateText, streamText } = obsy.instrumentVercelAI({
+const { generateText, streamText, generateObject } = obsy.instrumentVercelAI({
   generateText: aiGenerateText,
   streamText: aiStreamText,
+  generateObject: aiGenerateObject,
 });
 
 // 3. enable tracing for each request
@@ -54,6 +56,29 @@ app.post("/stream-text", async (req, res) => {
   }
 
   res.end();
+});
+
+app.post("/generate-object", async (req, res) => {
+  const { foodItem } = req.body;
+
+  const result = await generateObject({
+    model: openai("gpt-4-turbo"),
+    schema: z.object({
+      recipe: z.object({
+        name: z.string(),
+        ingredients: z.array(
+          z.object({
+            name: z.string(),
+            amount: z.string(),
+          })
+        ),
+        steps: z.array(z.string()),
+      }),
+    }),
+    prompt: `Generate a recipe for ${foodItem}.`,
+  });
+
+  res.json(result);
 });
 
 const PORT = 6969;
