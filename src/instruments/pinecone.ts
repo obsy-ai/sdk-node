@@ -1,7 +1,7 @@
 import type { Pinecone } from "@pinecone-database/pinecone";
 
 import type { OpTracerFn } from "#src/types/index.js";
-import type { IndexQueryType } from "#src/types/pinecone.js";
+import type { PineconeIndexQueryType } from "#src/types/pinecone.js";
 
 /**
  * Instruments a Pinecone client to trace its operations.
@@ -10,7 +10,7 @@ import type { IndexQueryType } from "#src/types/pinecone.js";
  * - `pinecone.index("<index-name>").query`
  * - `pinecone.index("<index-name>").namespace("<namespace-name>").query`
  */
-export function instrumentPinecone(client: Pinecone, opTracer: OpTracerFn<IndexQueryType>): Pinecone {
+export function instrumentPinecone(client: Pinecone, opTracer: OpTracerFn<PineconeIndexQueryType>): Pinecone {
   // first create a proxy for the index method
   const indexOrig = client.index.bind(client);
   client.index = new Proxy(indexOrig, {

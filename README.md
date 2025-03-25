@@ -23,13 +23,13 @@ const obsy = new ObsyClient({
   projectId: "<your-obsy-project-id>",
 });
 
-// 2. instrument OpenAI and Pinecone clients
+// 2. instrument OpenAI client
 obsy.instrument(openai);
 
 // 3. enable tracing for each request
 app.use(obsyExpress({ client: obsy }));
 
-// JUST 3 SIMPLE STEPS... THAT's IT!
+// JUST 3 SIMPLE STEPS... THAT'S IT!
 
 app.post("/chat", async (req, res) => {
   // view full code at examples/src/openai-responses.ts

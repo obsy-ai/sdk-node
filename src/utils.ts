@@ -1,3 +1,9 @@
+/**
+ * Checks if an object is an async iterable.
+ *
+ * @param obj - Object to check
+ * @returns `true` if the object is an async iterable, `false` otherwise
+ */
 export function isAsyncIterable(obj: any): obj is AsyncIterable<any> {
   return obj?.[Symbol.asyncIterator] !== undefined;
 }

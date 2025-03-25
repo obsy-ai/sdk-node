@@ -7,7 +7,7 @@ import { Stream } from "openai/streaming";
 import type { ObsyClient } from "./client.js";
 import type { AnyFunction, Op, OpTracerFn, OperationType, OperationVendor } from "./types/index.js";
 import type { OaiCompletionCreateReturnType, OaiCompletionCreateType, OaiResponsesCreateType } from "./types/openai.js";
-import type { IndexQueryType } from "./types/pinecone.js";
+import type { PineconeIndexQueryType } from "./types/pinecone.js";
 import { redactSensitiveKeys } from "./utils.js";
 
 interface TraceHttpRequest {
@@ -167,7 +167,7 @@ export class ObsyTrace {
     return userStream;
   }
 
-  async recordPineconeQuery<T>(op: Op<IndexQueryType>) {
+  async recordPineconeQuery<T>(op: Op<PineconeIndexQueryType>) {
     // copy args to remove the big ass vector array from the trace payload
     const argsCopyForSavingInDb = [...op.args];
     argsCopyForSavingInDb[0] = {

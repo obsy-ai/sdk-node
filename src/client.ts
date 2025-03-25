@@ -2,10 +2,10 @@ import { AsyncLocalStorage } from "node:async_hooks";
 
 import { Pinecone } from "@pinecone-database/pinecone";
 import OpenAI from "openai";
-import { instrumentPinecone } from "./instruments/pinecone.js";
 
 import { DEFAULT_SENSITIVE_KEYS } from "./constants.js";
 import { instrumentOpenAI } from "./instruments/openai.js";
+import { instrumentPinecone } from "./instruments/pinecone.js";
 import type { ObsyTrace } from "./trace.js";
 import type { Op } from "./types/index.js";
 
