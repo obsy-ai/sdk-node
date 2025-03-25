@@ -24,7 +24,7 @@ const obsy = new ObsyClient({
   projectId: env.OBSY_PROJECT_ID!,
 });
 
-// 2. instrument OpenAI and Pinecone clients
+// 2. instrument OpenAI client
 obsy.instrument(openai);
 
 // 3. enable tracing for each request
