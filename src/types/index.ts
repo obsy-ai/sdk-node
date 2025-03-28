@@ -4,7 +4,12 @@ export type OperationVendor = "openai" | "pinecone" | "vercel";
 
 export type OpenAiOperationType = "openai.chat.completions.create" | "openai.responses.create";
 export type PineconeOperationType = "pinecone.index.query" | "pinecone.index.namespace.query";
-export type VercelAiOperationType = "ai.embedMany" | "ai.generateText" | "ai.streamText" | "ai.generateObject";
+export type VercelAiOperationType =
+  | "ai.embedMany"
+  | "ai.generateText"
+  | "ai.streamText"
+  | "ai.generateObject"
+  | "ai.streamObject";
 export type OperationType = OpenAiOperationType | PineconeOperationType | VercelAiOperationType;
 
 /**

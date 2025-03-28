@@ -1,4 +1,4 @@
-import type { embedMany, generateObject, generateText, streamText } from "ai";
+import type { embedMany, generateObject, generateText, streamObject, streamText } from "ai";
 
 /**
  * The type of the `embedMany` function from Vercel's `ai` package.
@@ -31,10 +31,21 @@ export type VercelAIGenerateObjectType = typeof generateObject;
 export type VercelAIGenerateObjectReturnType = ReturnType<VercelAIGenerateObjectType>;
 
 /**
+ * The type of the `streamObject` function from Vercel's `ai` package.
+ */
+export type VercelAIStreamObjectType = typeof streamObject;
+
+/**
+ * The return type of the `streamObject` function from Vercel's `ai` package.
+ */
+export type VercelAIStreamObjectReturnType = ReturnType<VercelAIStreamObjectType>;
+
+/**
  * A union type of all the instrumented functions from Vercel's `ai` package.
  */
 export type VercelAIInstrumentedFunctions =
   | VercelAIEmbedManyType
   | VercelAIGenerateTextType
   | VercelAIStreamTextType
-  | VercelAIGenerateObjectType;
+  | VercelAIGenerateObjectType
+  | VercelAIStreamObjectType;

@@ -14,6 +14,8 @@ import type {
   VercelAIGenerateObjectType,
   VercelAIGenerateTextReturnType,
   VercelAIGenerateTextType,
+  VercelAIStreamObjectReturnType,
+  VercelAIStreamObjectType,
   VercelAIStreamTextType,
 } from "./types/vercel-ai.js";
 import { redactSensitiveKeys } from "./utils.js";
@@ -79,6 +81,7 @@ export class ObsyTrace {
       "ai.generateText": this.recordVercelAIGenerateTextOrObject.bind(this),
       "ai.streamText": this.recordVercelAIStreamText.bind(this),
       "ai.generateObject": this.recordVercelAIGenerateTextOrObject.bind(this),
+      "ai.streamObject": this.recordVercelAIStreamObject.bind(this),
     };
   }
 
@@ -276,6 +279,50 @@ export class ObsyTrace {
       return {
         ...result,
         textStream: userStream,
+      };
+    } catch (err) {
+      operation.error = err;
+      operation.endedAt = Date.now();
+      operation.duration = operation.endedAt - operation.startedAt;
+      throw err;
+    }
+  }
+
+  recordVercelAIStreamObject(op: Op<VercelAIStreamObjectType>): VercelAIStreamObjectReturnType {
+    const operation = this.createOperation(op.label, "vercel", op.type, op.args);
+    operation.result = {
+      value: undefined,
+      model: op.args[0].model.modelId,
+      usage: undefined,
+    };
+
+    try {
+      const result = op.fn.apply(op.thisArg, op.args);
+
+      const [processingStream, userStream] = result.partialObjectStream.tee();
+
+      (async () => {
+        try {
+          for await (const chunk of processingStream) {
+            operation.result!.value = chunk;
+          }
+
+          operation.result!.usage = await result.usage;
+        } catch (err) {
+          operation.error = err;
+          throw err;
+        } finally {
+          operation.endedAt = Date.now();
+          operation.duration = operation.endedAt - operation.startedAt;
+          if (operation.error) {
+            throw operation.error;
+          }
+        }
+      })();
+
+      return {
+        ...result,
+        partialObjectStream: userStream,
       };
     } catch (err) {
       operation.error = err;

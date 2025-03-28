@@ -2,6 +2,7 @@ import {
   embedMany as aiEmbedMany,
   generateObject as aiGenerateObject,
   generateText as aiGenerateText,
+  streamObject as aiStreamObject,
   streamText as aiStreamText,
 } from "ai";
 
@@ -11,6 +12,7 @@ import type {
   VercelAIGenerateObjectType,
   VercelAIGenerateTextType,
   VercelAIInstrumentedFunctions,
+  VercelAIStreamObjectType,
   VercelAIStreamTextType,
 } from "#src/types/vercel-ai.js";
 
@@ -19,6 +21,7 @@ export type VercelAIFunctionsArg = Partial<{
   generateText: VercelAIGenerateTextType;
   streamText: VercelAIStreamTextType;
   generateObject: VercelAIGenerateObjectType;
+  streamObject: VercelAIStreamObjectType;
 }>;
 
 export function instrumentVercelAI<T extends VercelAIFunctionsArg>(
@@ -29,7 +32,7 @@ export function instrumentVercelAI<T extends VercelAIFunctionsArg>(
     throw new Error("no functions to instrument");
   }
 
-  const { embedMany, generateText, streamText, generateObject } = functions;
+  const { embedMany, generateText, streamText, generateObject, streamObject } = functions;
   const result = {} as T;
 
   const createProxy = <F extends VercelAIInstrumentedFunctions>(params: {
@@ -92,5 +95,15 @@ export function instrumentVercelAI<T extends VercelAIFunctionsArg>(
       label: "vercel-ai-generate-object",
     });
   }
+
+  if (streamObject) {
+    result.streamObject = createProxy({
+      fn: streamObject,
+      originalFn: aiStreamObject,
+      type: "ai.streamObject",
+      label: "vercel-ai-stream-object",
+    });
+  }
+
   return result;
 }
