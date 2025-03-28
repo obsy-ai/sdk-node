@@ -1,7 +1,7 @@
 import type OpenAI from "openai";
 
-import { OpTracerFn } from "#src/types/index.js";
-import { OaiCompletionCreateType, OaiResponsesCreateType } from "#src/types/openai.js";
+import type { OpTracerFn } from "#src/types/index.js";
+import type { OaiCompletionCreateType, OaiResponsesCreateType } from "#src/types/openai.js";
 
 /**
  * Instruments an OpenAI client to trace its operations.

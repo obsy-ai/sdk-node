@@ -1,6 +1,6 @@
 import type { Index } from "@pinecone-database/pinecone";
 
 /**
- * The type of `Index.prototype.query`
+ * The type of `Index.prototype.query` from Pinecone
  */
-export type IndexQueryType = typeof Index.prototype.query;
+export type PineconeIndexQueryType = typeof Index.prototype.query;

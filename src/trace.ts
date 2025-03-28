@@ -7,7 +7,17 @@ import { Stream } from "openai/streaming";
 import type { ObsyClient } from "./client.js";
 import type { AnyFunction, Op, OpTracerFn, OperationType, OperationVendor } from "./types/index.js";
 import type { OaiCompletionCreateReturnType, OaiCompletionCreateType, OaiResponsesCreateType } from "./types/openai.js";
-import type { IndexQueryType } from "./types/pinecone.js";
+import type { PineconeIndexQueryType } from "./types/pinecone.js";
+import type {
+  VercelAIEmbedManyType,
+  VercelAIGenerateObjectReturnType,
+  VercelAIGenerateObjectType,
+  VercelAIGenerateTextReturnType,
+  VercelAIGenerateTextType,
+  VercelAIStreamObjectReturnType,
+  VercelAIStreamObjectType,
+  VercelAIStreamTextType,
+} from "./types/vercel-ai.js";
 import { redactSensitiveKeys } from "./utils.js";
 
 interface TraceHttpRequest {
@@ -67,6 +77,11 @@ export class ObsyTrace {
       "openai.chat.completions.create": this.recordOpenAi.bind(this),
       "pinecone.index.query": this.recordPineconeQuery.bind(this),
       "pinecone.index.namespace.query": this.recordPineconeQuery.bind(this),
+      "ai.embedMany": this.recordVercelAIEmbedMany.bind(this),
+      "ai.generateText": this.recordVercelAIGenerateTextOrObject.bind(this),
+      "ai.streamText": this.recordVercelAIStreamText.bind(this),
+      "ai.generateObject": this.recordVercelAIGenerateTextOrObject.bind(this),
+      "ai.streamObject": this.recordVercelAIStreamObject.bind(this),
     };
   }
 
@@ -167,7 +182,7 @@ export class ObsyTrace {
     return userStream;
   }
 
-  async recordPineconeQuery<T>(op: Op<IndexQueryType>) {
+  async recordPineconeQuery<T>(op: Op<PineconeIndexQueryType>) {
     // copy args to remove the big ass vector array from the trace payload
     const argsCopyForSavingInDb = [...op.args];
     argsCopyForSavingInDb[0] = {
@@ -198,6 +213,125 @@ export class ObsyTrace {
     }
   }
 
+  async recordVercelAIEmbedMany(op: Op<VercelAIEmbedManyType>) {}
+
+  async recordVercelAIGenerateTextOrObject(op: Op<VercelAIGenerateTextType | VercelAIGenerateObjectType>) {
+    const operation = this.createOperation(op.label, "vercel", op.type, op.args);
+    operation.result = {
+      value: undefined,
+      model: op.args[0].model.modelId,
+      usage: undefined,
+    };
+
+    try {
+      const result: Awaited<VercelAIGenerateTextReturnType | VercelAIGenerateObjectReturnType> = await (
+        op.fn as any
+      ).apply(op.thisArg as any, op.args as any);
+      operation.result.value = result;
+      operation.result.usage = result.usage;
+      return result;
+    } catch (err) {
+      operation.error = err;
+    } finally {
+      operation.endedAt = Date.now();
+      operation.duration = operation.endedAt - operation.startedAt;
+      if (operation.error) {
+        throw operation.error;
+      }
+    }
+  }
+
+  recordVercelAIStreamText(op: Op<VercelAIStreamTextType>) {
+    const operation = this.createOperation(op.label, "vercel", op.type, op.args);
+    operation.result = {
+      value: undefined,
+      model: op.args[0].model.modelId,
+      usage: undefined,
+    };
+
+    const chunks: Array<string> = [];
+    operation.result.value = chunks;
+
+    try {
+      const result = op.fn.apply(op.thisArg, op.args);
+
+      const [processingStream, userStream] = result.textStream.tee();
+
+      (async () => {
+        try {
+          for await (const chunk of processingStream) {
+            chunks.push(chunk);
+          }
+
+          operation.result!.usage = await result.usage;
+        } catch (err) {
+          operation.error = err;
+          throw err;
+        } finally {
+          operation.endedAt = Date.now();
+          operation.duration = operation.endedAt - operation.startedAt;
+          if (operation.error) {
+            throw operation.error;
+          }
+        }
+      })();
+
+      return {
+        ...result,
+        textStream: userStream,
+      };
+    } catch (err) {
+      operation.error = err;
+      operation.endedAt = Date.now();
+      operation.duration = operation.endedAt - operation.startedAt;
+      throw err;
+    }
+  }
+
+  recordVercelAIStreamObject(op: Op<VercelAIStreamObjectType>): VercelAIStreamObjectReturnType {
+    const operation = this.createOperation(op.label, "vercel", op.type, op.args);
+    operation.result = {
+      value: undefined,
+      model: op.args[0].model.modelId,
+      usage: undefined,
+    };
+
+    try {
+      const result = op.fn.apply(op.thisArg, op.args);
+
+      const [processingStream, userStream] = result.partialObjectStream.tee();
+
+      (async () => {
+        try {
+          for await (const chunk of processingStream) {
+            operation.result!.value = chunk;
+          }
+
+          operation.result!.usage = await result.usage;
+        } catch (err) {
+          operation.error = err;
+          throw err;
+        } finally {
+          operation.endedAt = Date.now();
+          operation.duration = operation.endedAt - operation.startedAt;
+          if (operation.error) {
+            throw operation.error;
+          }
+        }
+      })();
+
+      return {
+        ...result,
+        partialObjectStream: userStream,
+      };
+    } catch (err) {
+      operation.error = err;
+      operation.endedAt = Date.now();
+      operation.duration = operation.endedAt - operation.startedAt;
+      throw err;
+    }
+  }
+
   addResponse(response: TraceHttpResponse) {
     this.#response = response;
   }
@@ -205,7 +339,9 @@ export class ObsyTrace {
   end() {
     this.#endedAt = Date.now();
     this.#duration = this.#endedAt - this.#startedAt;
-    this.#client.sendTrace(this);
+    this.#client.sendTrace(this).catch((err) => {
+      console.error("[obsy] failed to send trace:", err);
+    });
   }
 
   createOperation(label: string, vendor: OperationVendor, type: OperationType, args: unknown[]) {

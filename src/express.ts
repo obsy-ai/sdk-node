@@ -1,6 +1,6 @@
-import { NextFunction, Request, Response } from "express";
+import type { NextFunction, Request, Response } from "express";
 
-import { ObsyClient } from "./client.js";
+import { type ObsyClient } from "./client.js";
 import { ObsyTrace } from "./trace.js";
 
 declare global {
@@ -16,11 +16,9 @@ interface ObsyExpressOptions {
 }
 
 /**
- * Express middleware to auto-instrument OpenAI and Pinecone clients for each request.
+ * Express middleware to automatically start a new Obsy trace for each request.
  *
- * @param client - Obsy client
- * @param openai - OpenAI client
- * @param pinecone - Optional Pinecone client
+ * @param client Obsy client
  */
 export function obsyExpress(options: ObsyExpressOptions) {
   return (req: Request, res: Response, next: NextFunction) => {
