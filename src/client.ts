@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import { DEFAULT_SENSITIVE_KEYS } from "./constants.js";
 import { instrumentOpenAI } from "./instruments/openai.js";
 import { instrumentPinecone } from "./instruments/pinecone.js";
+import { instrumentVercelAI, type VercelAIFunctionsArg } from "./instruments/vercel-ai.js";
 import type { ObsyTrace } from "./trace.js";
 import type { Op } from "./types/index.js";
 
@@ -94,10 +95,10 @@ export class ObsyClient {
 
       if (!response.ok) {
         const error = await response.json();
-        console.error("Failed to send trace:", error);
+        console.error("[obsy] failed to send trace:", error);
       }
     } catch (error) {
-      console.error("Error sending trace:", error);
+      console.error("[obsy] error sending trace:", error);
     }
   }
 
@@ -121,5 +122,9 @@ export class ObsyClient {
     }
 
     return this;
+  }
+
+  instrumentVercelAI<T extends VercelAIFunctionsArg>(functions: T) {
+    return instrumentVercelAI(functions, this.#traceOp.bind(this));
   }
 }
