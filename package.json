@@ -30,6 +30,9 @@
     "openai",
     "tracing"
   ],
+  "files": [
+    "/dist"
+  ],
   "tsup": {
     "entry": [
       "src/index.ts"
